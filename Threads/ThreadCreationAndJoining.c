@@ -36,3 +36,14 @@ int main() {
 
     return 0;
 }
+
+/*
+Notes:
+pthread_create() is used to create threads. It takes four parameters:
+A pointer to the thread identifier (pthread_t).
+Thread attributes (set to NULL to use default attributes).
+A pointer to the function the thread will execute (thread_function()).
+An argument to the thread function (&thread1_id and &thread2_id).
+pthread_join() waits for a thread to finish execution. This is important to ensure the main thread doesn’t terminate before the threads complete.
+The program creates two threads, each printing a message, and then waits for both threads to finish.
+*/
