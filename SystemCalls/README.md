@@ -94,5 +94,81 @@ The actual implementation of system calls varies depending on the specific Unix-
          int execve(const char *filename, char *const argv[], char *const envp[]);
      ```
 
+### **`mmap()` System Call and Background Concepts**
+
+#### **What is `mmap()`?**
+`mmap()` is a system call used to map files or devices into memory. It allows a program to access the contents of a file directly in memory, enabling efficient memory-mapped file I/O operations. The `mmap()` function essentially creates a memory region that behaves like a file, allowing the process to read and write to the file as though it were an array in memory.
+
+This system call is commonly used for:
+- Memory-mapped file I/O (e.g., for large files).
+- Shared memory between processes.
+- Efficient inter-process communication (IPC).
+- For handling files that are too large to fit in physical memory.
+
+#### **Syntax of `mmap()`**
+```c
+void *mmap(void *addr, size_t length, int prot, int flags, int fd, off_t offset);
+```
+
+- **`addr`**: The starting address for the mapping. It is usually set to `NULL` to let the system choose the address.
+- **`length`**: The length (in bytes) of the memory region to map.
+- **`prot`**: Protection flags, defining the access permissions of the mapped region (e.g., `PROT_READ`, `PROT_WRITE`).
+- **`flags`**: Specifies the mapping type and behavior (e.g., `MAP_SHARED`, `MAP_PRIVATE`).
+- **`fd`**: The file descriptor of the file to be mapped into memory.
+- **`offset`**: The starting point in the file where the mapping should begin (usually a multiple of the system's page size).
+
+#### **Return Value**
+`mmap()` returns a pointer to the mapped memory region on success, or `MAP_FAILED` (usually `-1`) on failure. The pointer can then be used to access the contents of the file directly in memory.
+
+#### **Memory Mapping Types**
+
+1. **`MAP_SHARED`**: Updates to the memory-mapped region are reflected in the file. It is used when you want to share changes made in memory back to the file.
+2. **`MAP_PRIVATE`**: Creates a copy-on-write mapping. Changes made to the memory region are not written back to the file but are local to the process.
+3. **`MAP_ANONYMOUS`**: Maps memory that is not backed by any file, effectively creating a region of memory that is initialized to zero.
+
+#### **Usage in Context:**
+
+1. **File Mapping**: 
+   When working with large files that cannot be entirely loaded into memory, `mmap()` allows the file to be mapped directly into the process's address space. This means the file’s data is accessed as if it were an array in memory, reducing the need for explicit read/write system calls.
+
+   Example:
+   ```c
+   char *mapped = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+   ```
+
+2. **Shared Memory**:
+   `mmap()` can be used for creating shared memory regions between different processes. The `MAP_SHARED` flag ensures that changes in one process are visible to other processes that map the same memory region.
+
+3. **Inter-Process Communication (IPC)**:
+   When using shared memory with `mmap()`, processes can communicate by reading from and writing to the same memory region, offering fast communication without the overhead of system calls like `read()` and `write()`.
+
+
+#### **Advantages of `mmap()`**
+
+1. **Efficiency**:
+   - Memory mapping allows for efficient file access, as data is loaded into memory in chunks when needed, reducing I/O overhead.
+   - It avoids the need to use multiple system calls like `read()` and `write()` and allows memory to be accessed directly.
+
+2. **Reduced Memory Copying**:
+   - Using `mmap()`, the system ensures that data is mapped into the address space of the process, thus avoiding data copying between user space and kernel space.
+
+3. **Direct Access**:
+   - Memory-mapped files can be directly accessed like arrays, making the code more natural and easier to manage.
+
+4. **Memory Sharing**:
+   - With `MAP_SHARED`, processes can share data without needing inter-process communication mechanisms like pipes or message queues.
+
+#### **Potential Issues with `mmap()`**
+
+- **Synchronization**:
+  - When using `mmap()` for shared memory, care must be taken to synchronize access between processes (e.g., using semaphores or mutexes) to avoid race conditions.
+
+- **Error Handling**:
+  - `mmap()` can fail for various reasons, such as invalid file descriptors or insufficient system resources. Proper error handling should be implemented.
+
+- **Memory Leaks**:
+  - If memory is mapped using `mmap()`, it must be unmapped using `munmap()` to avoid memory leaks.
+
+---
 
 These are just a few examples of Linux system calls. There are many more available, each serving specific purposes in managing processes, files, memory, etc., within the Linux environment.
